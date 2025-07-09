@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Indoor Air Monitor</title>
+  <style>
+    :root {
+      --primary: #2980b9;
+      --secondary: #ecf0f1;
+      --danger: #e74c3c;
+      --dark: #2c3e50;
+      --white: #fff;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--secondary);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 60px auto;
+      background: var(--white);
+      padding: 30px 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    h1, h2 {
+      color: var(--dark);
+      text-align: center;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: #ddd;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 6px 6px 0 0;
+      transition: 0.3s;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: var(--white);
+      font-size: 1em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #1f5d8b;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 0.9em;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .form {
+      display: none;
+    }
+
+    .form.active {
+      display: block;
+    }
+
+    #dashboard {
+      display: none;
+      padding: 30px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin-top: 30px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 25px 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .value {
+      font-size: 2.5em;
+      color: var(--primary);
+      margin-top: 10px;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="authBox">
+    <h1>Indoor Air Monitor</h1>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">Login</button>
+      <button class="tab" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <div class="form active" id="loginForm">
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="checkLogin()">Login</button>
+      <p class="error" id="errorMsg"></p>
+    </div>
+
+    <!-- Sign Up Form -->
+    <div class="form" id="signupForm">
+      <input type="text" id="newuser" placeholder="New Username" />
+      <input type="password" id="newpass" placeholder="New Password" />
+      <button onclick="createAccount()">Create Account</button>
+      <p class="error" id="createMsg"></p>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard">
+    <h2>Welcome to the Dashboard</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>🌡 Temperature (°C)</h3>
+        <div class="value" id="temp">--</div>
+      </div>
+      <div class="card">
+        <h3>💧 Humidity (%)</h3>
+        <div class="value" id="hum">--</div>
+      </div>
+      <div class="card">
+        <h3>🫁 Air Quality (%)</h3>
+        <div class="value" id="air">--</div>
+      </div>
+      <div class="card">
+        <h3>🔊 Buzzer Control</h3>
+        <div class="value" id="buzzer">--</div>
+        <div style="font-size: 0.9em;">(0 = OFF, 1 = ON)</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbx4AwxgTOvILz0v0SBN6j7VW01G97dNtSxH2BCuo2LZO3_P0ZzOyBoVIqCMh2InL8ma/exec";
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+
+      if (tab === 'login') {
+        document.getElementById('loginForm').classList.add('active');
+        document.querySelectorAll('.tab')[0].classList.add('active');
+      } else {
+        document.getElementById('signupForm').classList.add('active');
+        document.querySelectorAll('.tab')[1].classList.add('active');
+      }
+    }
+
+    function checkLogin() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+
+      fetch(`${scriptURL}?user=${user}&pass=${pass}`)
+        .then(res => res.text())
+        .then(data => {
+          if (data === "success") {
+            document.getElementById('authBox').style.display = "none";
+            document.getElementById('dashboard').style.display = "block";
+            updateData();
+            setInterval(updateData, 10000);
+          } else {
+            document.getElementById('errorMsg').innerText = "Invalid username or password.";
+          }
+        })
+        .catch(() => {
+          document.getElementById('errorMsg').innerText = "Login failed. Try again.";
+        });
+    }
+
+    function createAccount() {
+      const user = document.getElementById('newuser').value.trim();
+      const pass = document.getElementById('newpass').value.trim();
+
+      fetch(scriptURL, {
+        method: "POST",
+        body: new URLSearchParams({ user, pass })
+      })
+        .then(res => res.text())
+        .then(data => {
+          if (data === "created") {
+            document.getElementById('createMsg').innerText = "Account created! Please login.";
+            setTimeout(() => {
+              switchTab('login');
+              document.getElementById('createMsg').innerText = "";
+              document.getElementById('newuser').value = "";
+              document.getElementById('newpass').value = "";
+            }, 2000);
+          } else {
+            document.getElementById('createMsg').innerText = "Could not create account.";
+          }
+        })
+        .catch(() => {
+          document.getElementById('createMsg').innerText = "Error creating account.";
+        });
+    }
+
+    function updateData() {
+      const baseURL = "https://api.thingspeak.com/channels/3000756/fields/";
+      const apiKey = "6UW6KIFNBVY4FY72";
+      const fields = {
+        1: "temp",
+        2: "hum",
+        3: "air",
+        4: "buzzer"
+      };
+
+      for (const field in fields) {
+  fetch(`${baseURL}${field}/last.txt?api_key=${apiKey}`)
+    .then(res => res.text())
+    .then(data => {
+      const fieldID = fields[field];
+      const trimmed = data.trim();
+
+      if (fieldID === "buzzer") {
+        const val = parseInt(trimmed);
+        if (val === 1) {
+          document.getElementById(fieldID).innerText = "1";
+        } else {
+          document.getElementById(fieldID).innerText = "0";
+        }
+      } else {
+        document.getElementById(fieldID).innerText = trimmed;
+      }
+    })
+    .catch(() => {
+      document.getElementById(fields[field]).innerText = "Error";
+    });
+}
+
+    }
+  </script>
+
+</body>
+</html>
